@@ -22,6 +22,7 @@
 
 import curses
 import inspect
+import json
 import random
 import sys
 import termios
@@ -32,8 +33,8 @@ import termios
 
 wallet = 1000
 
-# Terminal-related globals.
-smul, rmul = None, None
+# The practice history file.
+history_f = None
 
 
 # ______________________________________________________________________
@@ -139,9 +140,9 @@ def get_card_strs(card):
 
     return name, suites[suite]
 
-def show_card(card):
+def get_card_str(card):
     name, suite = get_card_strs(card)
-    print(name + suite, end='')
+    return name + suite
 
 def show_cards(name, cards, end='\n'):
 
@@ -150,8 +151,10 @@ def show_cards(name, cards, end='\n'):
 
     for i, card in enumerate(cards):
         if i: print(', ', end='')
-        show_card(card)
+        print(get_card_str(card), end='')
     print(end=end)
+
+## Functions to play
 
 def get_total(hand):
     total = 0
@@ -182,7 +185,7 @@ def resolve_game(player_hand, dealer_hand, deck):
     while get_total(dealer_hand)[0] < 17:
         print(' ..hit.. ', end='')
         dealer_hand.append(deck.pop())
-        show_card(dealer_hand[-1])
+        print(get_card_str(dealer_hand[-1]), end='')
     print()
 
     if did_bust(dealer_hand):
@@ -249,6 +252,8 @@ def play():
         # TODO Include the bet and bet outcome here.
         resolve_game(player_hand, dealer_hand, deck)
 
+## Functions to practice
+
 def get_right_action(dealer, player):
     ''' This returns a letter from the string 'hsdopir' indicating
         the right course of action given the dealer hand (with
@@ -297,6 +302,15 @@ def get_right_action(dealer, player):
         return 'd' if lower <= dealer <= 6 else 'h'
 
 def render_hand(name, hand, do_draw_top=False):
+    ''' This renders cards in a 7x3 (7-wide, 3-tall) "card" in color
+        in the terminal. The card background is white, with most cards
+        using the central 3 character spaces for the card character (eg 2, 6, K)
+        on the left and the suite character on the right. The 10 card renders
+        with the '1' extending out an extra character to the left.
+
+        There's also room for the `name` string, which is expected to be at most
+        6 characters long.
+    '''
 
     _normal    = ('sgr0',)
     _green_bg  = ('setab', 28)
@@ -341,6 +355,32 @@ def render_hand(name, hand, do_draw_top=False):
     term_print(_green_bg, ' ' * (9 + 8 * 2))
     term_print(_normal)
 
+def record_practice(dealer, player, choice, right_action):
+
+    global history_f
+
+    if history_f is None:
+        history_f = open('practice_history.jsonl', 'w')
+
+    choices = {
+            'h': 'hit',
+            's': 'stand',
+            'd': 'double/hit',
+            'o': 'double/stand',
+            'p': 'split',
+            'i': 'split-if-DAS',
+            'r': 'surrender'
+    }
+
+    obj = {
+            'dealer': get_card_str(dealer[0]),
+            'player': ' '.join(get_card_str(c) for c in player),
+            'player choice': choices[choice],
+            'right action': choices[right_action]
+    }
+
+    history_f.write(json.dumps(obj, ensure_ascii=False) + '\n')
+
 def practice():
 
     num_decks = 6
@@ -373,6 +413,8 @@ def practice():
             print('nice')
         else:
             print(f'No, sorry, the right action is {right_action}')
+
+        record_practice(dealer_hand, player_hand, choice, right_action)
 
 
 # ______________________________________________________________________
