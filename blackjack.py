@@ -37,6 +37,29 @@ smul, rmul = None, None
 
 
 # ______________________________________________________________________
+# Terminal-Escape Printing
+
+def term_print(strs, flush=True):
+    ''' This expects `strs` to be a list of strings and tuples. Each
+        string is printed, while each tuple is interpreted as a tput command
+        with any needed parameters supplied. For example, the tuple ('smul',)
+        turns on underlined printing. The command ('setaf', 15) changes the font
+        color to color 15 (which is typically white).
+    '''
+    for s in strs:
+        if type(s) is str:
+            s = s.encode()
+        else:
+            assert type(s) is tuple
+            if len(s) == 1:
+                s = curses.tigetstr(s[0])
+            else:
+                s = curses.tparm(curses.tigetstr(s[0]), *s[1:])
+        sys.stdout.buffer.write(s)
+    sys.stdout.buffer.flush()
+
+
+# ______________________________________________________________________
 # Utility Functions
 
 def getch():
@@ -69,24 +92,16 @@ clean = inspect.cleandoc
     
 def format_print(s):
 
-    global smul, rmul
-
-    if smul is None:
-        curses.setupterm()
-        smul = curses.tigetstr('smul')
-        rmul = curses.tigetstr('rmul')
-
-    byte_list = []
+    parts = []
     mode = 0
-    mode_starts = [rmul, smul]
-    for ch in s:
-        if ch == '_':
+    mode_starts = [('rmul',), ('smul',)]
+    for i, substr in enumerate(s.split('_')):
+        if i > 0:
             mode = 1 - mode
-            byte_list.append(mode_starts[mode])
-        else:
-            byte_list.append(ch.encode())
-    sys.stdout.buffer.write(b''.join(byte_list))
-    sys.stdout.buffer.flush()
+            parts.append(mode_starts[mode])
+        parts.append(substr)
+
+    term_print(parts)
 
 
 # ______________________________________________________________________
@@ -302,6 +317,8 @@ def practice():
 # Main
 
 if __name__ == '__main__':
+
+    curses.setupterm()
 
     # Ask the user to choose a mode.
     print('Choose a mode please:')
