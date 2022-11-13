@@ -124,16 +124,18 @@ def show_cards(name, cards, end='\n'):
 def get_total(hand):
     total = 0
     num_aces = 0
+    is_soft = False
     for card in hand:
         num = min(card % 13 + 1, 10)
         if num == 1: num_aces += 1
         total += num
     if total <= 11 and num_aces > 0:
         total += 10
-    return total
+        is_soft = True
+    return total, is_soft
 
 def did_bust(hand):
-    return get_total(hand) > 21
+    return get_total(hand)[0] > 21
 
 def resolve_game(player_hand, dealer_hand, deck):
 
@@ -145,7 +147,7 @@ def resolve_game(player_hand, dealer_hand, deck):
         return
     
     show_cards('Dealer', dealer_hand, end='')
-    while get_total(dealer_hand) < 17:
+    while get_total(dealer_hand)[0] < 17:
         print(' ..hit.. ', end='')
         dealer_hand.append(deck.pop())
         show_card(dealer_hand[-1])
@@ -158,8 +160,8 @@ def resolve_game(player_hand, dealer_hand, deck):
         return
 
     # If we get here, neither the player nor the dealer has busted.
-    pl = get_total(player_hand)
-    de = get_total(dealer_hand)
+    pl = get_total(player_hand)[0]
+    de = get_total(dealer_hand)[0]
     if pl == de:
         print('push')
     elif pl > de:
@@ -215,6 +217,53 @@ def play():
         # TODO Include the bet and bet outcome here.
         resolve_game(player_hand, dealer_hand, deck)
 
+def get_right_action(dealer, player):
+    ''' This returns a letter from the string 'hsdopir' indicating
+        the right course of action given the dealer hand (with
+        dealer[0] visible) and the player hand.
+        The actions match those in the prompt within practice().
+    '''
+
+    total, is_soft = get_total(player)
+    dealer = min(dealer[0] % 13 + 1, 10)
+
+    # Check for surrenders first.
+    if (total == 16 and dealer in [1, 9, 10]) or (total == 15 and dealer == 10):
+        return 'r'
+
+    # Check for splits.
+    c1 = min(player[0] % 13 + 1, 10)
+    c2 = min(player[1] % 13 + 1, 10)
+    if c1 == c2:
+        if c1 == 1 or c1 == 8: return 'p'
+        if c1 == 9 and dealer not in [1, 7, 10]: return 'p'
+        if c1 == 4 and dealer in [5, 6]: return 'i'
+        if c1 in [2, 3, 6, 7] and dealer <= 7 and not (c1 == 6 and dealer == 7):
+            if (c1 == 6 and dealer == 2) or (c1 <= 3 and dealer <= 3):
+                return 'i'
+            return 'p'
+
+    if not is_soft:
+
+        if total >= 17: return 's'
+        if total <= 8 : return 'h'
+        if 12 <= total <= 16 and dealer <= 6:
+            return 'h' if dealer in [2, 3] else 's'
+        if total == 11: return 'd'
+        if total == 10: return 'h' if dealer in [1, 10] else 'd'
+        if total == 9: return 'd' if 3 <= dealer <= 6 else 'h'
+        return 'h'
+
+    else:  # The player has a soft total.
+
+        if total >= 20: return 's'
+        if total == 19: return 'o' if dealer == 6 else 's'
+        if total == 18:
+            if dealer <= 6: return 'o'
+            return 's' if dealer <= 8 else 'h'
+        lower = 11.5 - total / 2
+        return 'd' if lower <= dealer <= 6 else 'h'
+
 def practice():
 
     num_decks = 6
@@ -233,7 +282,7 @@ def practice():
 
         msg = clean('''
             Action: _H_it _S_tand _D_ouble/hit D_o_uble/stand
-                    S_p_lit Split-_i_f-DAS Su_r_render _Q_uit
+                    S_p_lit Split-_i_f-DAS Su_r_render/hit _Q_uit
         ''')
 
         format_print('\n' + msg + '\n')
@@ -242,6 +291,11 @@ def practice():
         if choice == 'q':
             be_done()
 
+        right_action = get_right_action(dealer_hand, player_hand)
+        if choice == right_action:
+            print('nice')
+        else:
+            print(f'No, sorry, the right action is {right_action}')
 
 
 # ______________________________________________________________________
