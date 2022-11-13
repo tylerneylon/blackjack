@@ -58,6 +58,9 @@ def term_print(strs, *args, flush=True):
     for s in strs:
         if type(s) is str:
             s = s.encode()
+        elif type(s) is list:
+            term_print(s)
+            s = b''
         else:
             assert type(s) is tuple
             if len(s) == 1:
@@ -324,6 +327,9 @@ def render_hand(name, hand, do_draw_top=False):
     # Top line.
     if do_draw_top:
         term_print(_green_bg, ' ' * (9 + 8 * 2))
+    # Go to normal mode at the end of lines to avoid bg-color overrun, which
+    # happens when we print a new line at the bottom of the terminal.
+    term_print(_normal)
     print()
 
     # Top of cards.
@@ -332,7 +338,7 @@ def render_hand(name, hand, do_draw_top=False):
     for i in range(2):
         bg = _white_bg if i < n else _green_bg
         text_free_card_line += [bg, ' ' * 7, _green_bg, ' ']
-    term_print(text_free_card_line)
+    term_print(text_free_card_line, _normal)
     print()
 
     # Main line.
@@ -345,10 +351,11 @@ def render_hand(name, hand, do_draw_top=False):
             term_print(_white_bg, fg, f' {name:>2s} {suite}  ', _green_bg, ' ')
         else:
             term_print(_green_bg, ' ' * 8)
+    term_print(_normal)
     print()
 
     # Bottom of cards.
-    term_print(text_free_card_line)
+    term_print(text_free_card_line, _normal)
     print()
 
     # Bottom line.
