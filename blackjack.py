@@ -20,6 +20,8 @@
 # ______________________________________________________________________
 # Imports
 
+import curses
+import inspect
 import random
 import sys
 import termios
@@ -29,6 +31,9 @@ import termios
 # Globals
 
 wallet = 1000
+
+# Terminal-related globals.
+smul, rmul = None, None
 
 
 # ______________________________________________________________________
@@ -59,7 +64,29 @@ def be_done():
     print()
     print('Have a great rest of your day!! :)')
     sys.exit(0)
+
+clean = inspect.cleandoc
     
+def format_print(s):
+
+    global smul, rmul
+
+    if smul is None:
+        curses.setupterm()
+        smul = curses.tigetstr('smul')
+        rmul = curses.tigetstr('rmul')
+
+    byte_list = []
+    mode = 0
+    mode_starts = [rmul, smul]
+    for ch in s:
+        if ch == '_':
+            mode = 1 - mode
+            byte_list.append(mode_starts[mode])
+        else:
+            byte_list.append(ch.encode())
+    sys.stdout.buffer.write(b''.join(byte_list))
+    sys.stdout.buffer.flush()
 
 
 # ______________________________________________________________________
@@ -157,6 +184,7 @@ def play():
         except EOFError:
             be_done()
 
+        # TODO Don't shuffle every time.
         deck = shuffle_decks(num_decks)
 
         dealer_hand = [deck.pop(), deck.pop()]
@@ -188,7 +216,32 @@ def play():
         resolve_game(player_hand, dealer_hand, deck)
 
 def practice():
-    pass
+
+    num_decks = 6
+
+    while True:
+
+        print('\n' + '_' * 70)
+
+        deck = shuffle_decks(num_decks)
+
+        dealer_hand = [deck.pop(), deck.pop()]
+        player_hand = [deck.pop(), deck.pop()]
+
+        show_cards('Dealer', dealer_hand[:1])
+        show_cards('You', player_hand)
+
+        msg = clean('''
+            Action: _H_it _S_tand _D_ouble/hit D_o_uble/stand
+                    S_p_lit Split-_i_f-DAS Su_r_render _Q_uit
+        ''')
+
+        format_print('\n' + msg + '\n')
+        choice = wait_for_user_choice('hsdopirq')
+
+        if choice == 'q':
+            be_done()
+
 
 
 # ______________________________________________________________________
