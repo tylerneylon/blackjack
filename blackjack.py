@@ -39,13 +39,21 @@ smul, rmul = None, None
 # ______________________________________________________________________
 # Terminal-Escape Printing
 
-def term_print(strs, flush=True):
+def term_print(strs, *args, flush=True):
     ''' This expects `strs` to be a list of strings and tuples. Each
         string is printed, while each tuple is interpreted as a tput command
         with any needed parameters supplied. For example, the tuple ('smul',)
         turns on underlined printing. The command ('setaf', 15) changes the font
         color to color 15 (which is typically white).
     '''
+
+    if args:
+        strs = [strs] + list(args)
+
+    # As an edge case, we may receive just a single tuple.
+    if type(strs) is tuple:
+        strs = [strs]
+
     for s in strs:
         if type(s) is str:
             s = s.encode()
@@ -115,7 +123,11 @@ def shuffle_decks(num_decks):
 
     return full_deck
 
-def show_card(card):
+def get_card_strs(card):
+    ''' Return name, suite, where `name` is one of these strings:
+        2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K, A;
+        and suite is one (non-ASCII) character.
+    '''
 
     suite = card // 13
     num   = card % 13 + 1
@@ -124,7 +136,12 @@ def show_card(card):
     names = {1: 'A', 11: 'J', 12: 'Q', 13: 'K'}
 
     name = names.get(num, str(num))
-    print(name + suites[suite], end='')
+
+    return name, suites[suite]
+
+def show_card(card):
+    name, suite = get_card_strs(card)
+    print(name + suite, end='')
 
 def show_cards(name, cards, end='\n'):
 
@@ -263,7 +280,7 @@ def get_right_action(dealer, player):
         if total >= 17: return 's'
         if total <= 8 : return 'h'
         if 12 <= total <= 16 and dealer <= 6:
-            return 'h' if dealer in [2, 3] else 's'
+            return 'h' if (total == 12 and dealer in [2, 3]) else 's'
         if total == 11: return 'd'
         if total == 10: return 'h' if dealer in [1, 10] else 'd'
         if total == 9: return 'd' if 3 <= dealer <= 6 else 'h'
@@ -279,6 +296,51 @@ def get_right_action(dealer, player):
         lower = 11.5 - total / 2
         return 'd' if lower <= dealer <= 6 else 'h'
 
+def render_hand(name, hand, do_draw_top=False):
+
+    _normal    = ('sgr0',)
+    _green_bg  = ('setab', 28)
+    _subtle_fg = ('setaf', 34)
+    _white_bg  = ('setab', 15)
+    _red_fg    = ('setaf', 196)
+    _black_fg  = ('setaf', 232)
+
+    n = len(hand)
+
+    # Top line.
+    if do_draw_top:
+        term_print(_green_bg, ' ' * (9 + 8 * 2))
+    print()
+
+    # Top of cards.
+    text_free_card_line = []
+    text_free_card_line += [_green_bg, ' ' * 9]
+    for i in range(2):
+        bg = _white_bg if i < n else _green_bg
+        text_free_card_line += [bg, ' ' * 7, _green_bg, ' ']
+    term_print(text_free_card_line)
+    print()
+
+    # Main line.
+    term_print(_green_bg, _subtle_fg, f' {name:6s}  ')
+    for i in range(2):
+        if i < n:
+            card = hand[i]
+            name, suite = get_card_strs(card)
+            fg = _red_fg if suite in ['♦', '♥'] else _black_fg
+            term_print(_white_bg, fg, f' {name:>2s} {suite}  ', _green_bg, ' ')
+        else:
+            term_print(_green_bg, ' ' * 8)
+    print()
+
+    # Bottom of cards.
+    term_print(text_free_card_line)
+    print()
+
+    # Bottom line.
+    term_print(_green_bg, ' ' * (9 + 8 * 2))
+    term_print(_normal)
+
 def practice():
 
     num_decks = 6
@@ -292,15 +354,15 @@ def practice():
         dealer_hand = [deck.pop(), deck.pop()]
         player_hand = [deck.pop(), deck.pop()]
 
-        show_cards('Dealer', dealer_hand[:1])
-        show_cards('You', player_hand)
+        render_hand('Dealer', dealer_hand[:1], do_draw_top=True)
+        render_hand('You', player_hand)
 
         msg = clean('''
             Action: _H_it _S_tand _D_ouble/hit D_o_uble/stand
                     S_p_lit Split-_i_f-DAS Su_r_render/hit _Q_uit
         ''')
 
-        format_print('\n' + msg + '\n')
+        format_print('\n\n' + msg + '\n')
         choice = wait_for_user_choice('hsdopirq')
 
         if choice == 'q':
