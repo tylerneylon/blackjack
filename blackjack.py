@@ -45,6 +45,16 @@ def getch():
         termios.tcsetattr(0, termios.TCSANOW, old_settings)
     return ch
 
+def wait_for_user_choice(choices):
+    ''' Collect one keypress, and return the keypress if
+        it is in the string `choices`, ignoring case. Otherwise keep
+        collecting keypresses until the user acquiesces. 
+    '''
+    choice = '_'
+    while choice not in choices:
+        choice = getch().lower()
+    return choice
+
 def be_done():
     print()
     print('Have a great rest of your day!! :)')
@@ -161,11 +171,9 @@ def play():
 
         while not is_done:
 
-            print('[H]it, [S]tand, [Q]uit')  # TODO Add more choices.
-
-            choice = '_'
-            while choice.lower() not in 'hsq':
-                choice = getch().lower()
+            # TODO Add more choices.
+            print('[H]it, [S]tand, [Q]uit')
+            choice = wait_for_user_choice('hsq')
 
             if choice == 'q':
                 be_done()
@@ -179,10 +187,23 @@ def play():
         # TODO Include the bet and bet outcome here.
         resolve_game(player_hand, dealer_hand, deck)
 
+def practice():
+    pass
+
 
 # ______________________________________________________________________
 # Main
 
 if __name__ == '__main__':
 
-    play()
+    # Ask the user to choose a mode.
+    print('Choose a mode please:')
+    print('[1] Play [2] Practice perfect strategy')
+    choice = wait_for_user_choice('12')
+
+    if choice == '1':
+        play()
+    elif choice == '2':
+        # TODO Print out a perfect strategy chart, or otherwise
+        #      make that available to the user.
+        practice()
