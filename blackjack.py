@@ -11,8 +11,8 @@
 # Notes on internal data representation.
 #
 # * Each card c is an integer 0-51.
-# * Break this down as (suite, num) = (c // 13, c % 13 + 1).
-# * The suites are in this order: clubs, diamonds, hearts, spades.
+# * Break this down as (suit, num) = (c // 13, c % 13 + 1).
+# * The suits are in this order: clubs, diamonds, hearts, spades.
 # * The numbers are A, 2-10, J, Q, K.
 # 
 
@@ -128,24 +128,24 @@ def shuffle_decks(num_decks):
     return full_deck
 
 def get_card_strs(card):
-    ''' Return name, suite, where `name` is one of these strings:
+    ''' Return name, suit, where `name` is one of these strings:
         2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K, A;
-        and suite is one (non-ASCII) character.
+        and suit is one (non-ASCII) character.
     '''
 
-    suite = card // 13
-    num   = card % 13 + 1
+    suit = card // 13
+    num  = card % 13 + 1
 
-    suites = ['♣', '♦', '♥', '♠']
+    suits = ['♣', '♦', '♥', '♠']
     names = {1: 'A', 11: 'J', 12: 'Q', 13: 'K'}
 
     name = names.get(num, str(num))
 
-    return name, suites[suite]
+    return name, suits[suit]
 
 def get_card_str(card):
-    name, suite = get_card_strs(card)
-    return name + suite
+    name, suit = get_card_strs(card)
+    return name + suit
 
 def show_cards(name, cards, end='\n'):
 
@@ -313,7 +313,7 @@ def render_hand(name, hand, do_draw_top=False):
     ''' This renders cards in a 7x3 (7-wide, 3-tall) "card" in color
         in the terminal. The card background is white, with most cards
         using the central 3 character spaces for the card character (eg 2, 6, K)
-        on the left and the suite character on the right. The 10 card renders
+        on the left and the suit character on the right. The 10 card renders
         with the '1' extending out an extra character to the left.
 
         There's also room for the `name` string, which is expected to be at most
@@ -351,9 +351,9 @@ def render_hand(name, hand, do_draw_top=False):
     for i in range(2):
         if i < n:
             card = hand[i]
-            name, suite = get_card_strs(card)
-            fg = _red_fg if suite in ['♦', '♥'] else _black_fg
-            term_print(_white_bg, fg, f' {name:>2s} {suite}  ', _green_bg, ' ')
+            name, suit = get_card_strs(card)
+            fg = _red_fg if suit in ['♦', '♥'] else _black_fg
+            term_print(_white_bg, fg, f' {name:>2s} {suit}  ', _green_bg, ' ')
         else:
             term_print(_green_bg, ' ' * 8)
     term_print(_normal)
