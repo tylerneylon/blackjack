@@ -303,8 +303,8 @@ def get_right_action(dealer, player):
         if total >= 20: return 's'
         if total == 19: return 'o' if dealer == 6 else 's'
         if total == 18:
-            if dealer <= 6: return 'o'
-            return 's' if dealer <= 8 else 'h'
+            if 2 <= dealer <= 6: return 'o'
+            return 's' if 7 <= dealer <= 8 else 'h'
         lower = 11.5 - total / 2
         return 'd' if lower <= dealer <= 6 else 'h'
 
