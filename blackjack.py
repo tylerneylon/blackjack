@@ -266,13 +266,14 @@ def get_right_action(dealer, player):
 
     total, is_soft = get_total(player)
     dealer = min(dealer[0] % 13 + 1, 10)
+    if dealer == 1: dealer = 11
 
     # Check for splits.
     c1 = min(player[0] % 13 + 1, 10)
     c2 = min(player[1] % 13 + 1, 10)
     if c1 == c2:
         if c1 == 1 or c1 == 8: return 'p'
-        if c1 == 9 and dealer not in [1, 7, 10]: return 'p'
+        if c1 == 9 and dealer not in [7, 10, 11]: return 'p'
         if c1 == 4 and dealer in [5, 6]: return 'i'
         if c1 in [2, 3, 6, 7] and dealer <= 7 and not (c1 == 6 and dealer == 7):
             if (c1 == 6 and dealer == 2) or (c1 <= 3 and dealer <= 3):
@@ -282,7 +283,7 @@ def get_right_action(dealer, player):
     # Check for surrenders.
     if not is_soft:
         if (
-                (total == 16 and dealer in [1, 9, 10]) or
+                (total == 16 and dealer in [9, 10, 11]) or
                 (total == 15 and dealer == 10)
            ):
             return 'r'
@@ -291,10 +292,10 @@ def get_right_action(dealer, player):
 
         if total >= 17: return 's'
         if total <= 8 : return 'h'
-        if 12 <= total <= 16 and 2 <= dealer <= 6:
-            return 'h' if (total == 12 and dealer in [2, 3]) else 's'
+        if 12 <= total <= 16 and dealer <= 6:
+            return 'h' if (total == 12 and dealer <= 3) else 's'
         if total == 11: return 'd'
-        if total == 10: return 'h' if dealer in [1, 10] else 'd'
+        if total == 10: return 'h' if dealer >= 10 else 'd'
         if total == 9: return 'd' if 3 <= dealer <= 6 else 'h'
         return 'h'
 
@@ -303,7 +304,7 @@ def get_right_action(dealer, player):
         if total >= 20: return 's'
         if total == 19: return 'o' if dealer == 6 else 's'
         if total == 18:
-            if 2 <= dealer <= 6: return 'o'
+            if dealer <= 6: return 'o'
             return 's' if 7 <= dealer <= 8 else 'h'
         lower = 11.5 - total / 2
         return 'd' if lower <= dealer <= 6 else 'h'
