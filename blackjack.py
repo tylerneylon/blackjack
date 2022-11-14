@@ -366,13 +366,7 @@ def render_hand(name, hand, do_draw_top=False):
     term_print(_green_bg, ' ' * (9 + 8 * 2))
     term_print(_normal)
 
-def record_practice(dealer, player, choice, right_action):
-
-    global history_f
-
-    if history_f is None:
-        history_f = open('practice_history.jsonl', 'w')
-
+def get_choice_str(choice):
     choices = {
             'h': 'hit',
             's': 'stand',
@@ -382,12 +376,20 @@ def record_practice(dealer, player, choice, right_action):
             'i': 'split-if-DAS',
             'r': 'surrender'
     }
+    return choices[choice]
+
+def record_practice(dealer, player, choice, right_action):
+
+    global history_f
+
+    if history_f is None:
+        history_f = open('practice_history.jsonl', 'w')
 
     obj = {
             'dealer': get_card_str(dealer[0]),
             'player': ' '.join(get_card_str(c) for c in player),
-            'player choice': choices[choice],
-            'right action': choices[right_action]
+            'player choice': get_choice_str(choice),
+            'right action' : get_choice_str(right_action)
     }
 
     history_f.write(json.dumps(obj, ensure_ascii=False) + '\n')
@@ -418,6 +420,8 @@ def practice():
 
         if choice == 'q':
             be_done()
+
+        print('You chose to', get_choice_str(choice))
 
         right_action = get_right_action(dealer_hand, player_hand)
         if choice == right_action:
