@@ -268,8 +268,12 @@ def get_right_action(dealer, player):
     dealer = min(dealer[0] % 13 + 1, 10)
 
     # Check for surrenders first.
-    if (total == 16 and dealer in [1, 9, 10]) or (total == 15 and dealer == 10):
-        return 'r'
+    if not is_soft:
+        if (
+                (total == 16 and dealer in [1, 9, 10]) or
+                (total == 15 and dealer == 10)
+           ):
+            return 'r'
 
     # Check for splits.
     c1 = min(player[0] % 13 + 1, 10)
