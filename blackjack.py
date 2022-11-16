@@ -36,6 +36,9 @@ wallet = 1000
 # The practice history file.
 history_f = None
 
+num_practices = 0
+num_correct   = 0
+
 
 # ______________________________________________________________________
 # Terminal-Escape Printing
@@ -103,7 +106,11 @@ def be_done():
 clean = inspect.cleandoc
     
 def format_print(s):
-
+    ''' Print the string `s`, underlining parts between underscores.
+        This is a horribly-written hacky function, so at present there is
+        no way to actually print an underscore; they're just all interepreted
+        as starting and ending underlined substring.
+    '''
     parts = []
     mode = 0
     mode_starts = [('rmul',), ('smul',)]
@@ -112,7 +119,6 @@ def format_print(s):
             mode = 1 - mode
             parts.append(mode_starts[mode])
         parts.append(substr)
-
     term_print(parts)
 
 
@@ -395,9 +401,25 @@ def record_practice(dealer, player, choice, right_action):
 
     history_f.write(json.dumps(obj, ensure_ascii=False) + '\n')
 
+def does_hand_match_mode(hand, mode):
+    ''' `mode` is expected to be 'all' or 'hard', as in 'hard totals only'.  '''
+
+    if mode == 'all':
+        return True
+
+    assert mode == 'hard'
+
+    return all((card % 13 + 1) != 1 for card in hand)
+
 def practice():
 
+    global num_practices, num_correct
     num_decks = 6
+
+    # TODO Add other options here
+    format_print('Practice: [_A_]ll hands, [_H_]ard totals only')
+    mode = wait_for_user_choice('ah')
+    mode = {'a': 'all', 'h': 'hard'}[mode]
 
     while True:
 
@@ -407,6 +429,8 @@ def practice():
 
         dealer_hand = [deck.pop(), deck.pop()]
         player_hand = [deck.pop(), deck.pop()]
+        while not does_hand_match_mode(player_hand, mode):
+            player_hand = [deck.pop(), deck.pop()]
 
         render_hand('Dealer', dealer_hand[:1], do_draw_top=True)
         render_hand('You', player_hand)
@@ -427,8 +451,14 @@ def practice():
         right_action = get_right_action(dealer_hand, player_hand)
         if choice == right_action:
             print('nice')
+            num_correct += 1
         else:
             print(f'No, sorry, the right action is {right_action}')
+
+        num_practices += 1
+
+        acc = num_correct / num_practices
+        print(f'[{num_correct}] Your accuracy so far is {acc * 100:.1f}%')
 
         record_practice(dealer_hand, player_hand, choice, right_action)
 
@@ -442,7 +472,7 @@ if __name__ == '__main__':
 
     # Ask the user to choose a mode.
     print('Choose a mode please:')
-    print('[1] Play [2] Practice perfect strategy')
+    print('[1] Play [2] Practice basic strategy')
     choice = wait_for_user_choice('12')
 
     if choice == '1':
